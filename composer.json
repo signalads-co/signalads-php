@@ -1,0 +1,24 @@
+{
+    "name": "signalads/php",
+    "type": "library",
+    "description": "A PHP wrapper for SignalAds's API",
+    "keywords": ["signalads", "sms", "api"],
+    "homepage": "http://github.com/signalads-co/signalads-php",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "SignalAds PHP Library",
+            "email": "support@signalads.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "SignalAds\\": "src/"
+        }
+    },
+    "minimum-stability" : "stable"
+}
