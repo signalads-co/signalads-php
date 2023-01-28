@@ -89,8 +89,8 @@ $api->Send($sender,$receptor,$message);
 $api = new \SignalAds\SignalAdsApi( "API Key" );
 $sender = "10004346";
 $message = "خدمات پیام کوتاه سیگنال";
-$receptor = array("09123456789","09367891011");
-$api->SendGroup($sender,$receptor,$message);
+$receptors = array("09123456789","09367891011");
+$api->SendGroup($sender,$receptors,$message);
 ```
 
 `Sample Output`
@@ -116,8 +116,8 @@ $api = new \SignalAds\SignalAdsApi( "API Key" );
 $sender = "10004346";
 $pattern_id = "10004346";
 $pattern_params = ["param 1", "param 2"];
-$receptor = array("09123456789","09367891011");
-$api->SendPattern($sender,$pattern_id,$pattern_params,$receptor);
+$receptors = array("09123456789","09367891011");
+$api->SendPattern($sender,$pattern_id,$pattern_params,$receptors);
 ```
 
 `Sample Output`
