@@ -10,7 +10,8 @@ use SignalAds\Enums\General;
 
 class SignalAdsApi
 {
-    const APIPATH = "%s://127.0.0.1:8000/api/%s/%s/%s";
+    const APIPATH = "%s://sms.signalads.com/api/%s/%s/%s";
+
     const VERSION = "v1";
 
     public function __construct($apiKey, $insecure = false)
@@ -31,7 +32,7 @@ class SignalAdsApi
     {
         return sprintf(
             self::APIPATH,
-            $this->insecure == true ? "http" : "https",
+            $this->insecure ? "http" : "https",
             $version,
             $this->apiKey,
             $method
@@ -50,6 +51,7 @@ class SignalAdsApi
                 curl_setopt($handle, CURLOPT_POST, true);
                 break;
             case 'GET':
+                $url = $url . '?' . http_build_query($data);
                 curl_setopt($handle, CURLOPT_CUSTOMREQUEST, 'GET');
                 break;
             default:
@@ -74,28 +76,36 @@ class SignalAdsApi
         curl_setopt($handle, CURLOPT_POST, true);
         curl_setopt($handle, CURLOPT_POSTFIELDS, $fields_string);
 
+
         $response = curl_exec($handle);
+
         $code = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+
         $content_type = curl_getinfo($handle, CURLINFO_CONTENT_TYPE);
         $curl_errno = curl_errno($handle);
         $curl_error = curl_error($handle);
-        if ($curl_errno) {
-            throw new HttpException($curl_error, $curl_errno);
+
+        if ($code != 200 && empty($response)) {
+            throw new HttpException("Request have errors", $code);
         }
         $json_response = json_decode($response);
-        if ($code != 200 && is_null($json_response)) {
-            throw new HttpException("Request have errors", $code);
-        } else {
-            $json_return = $json_response->return;
-            if ($json_return->status != 200) {
-                throw new ApiException($json_return->message, $json_return->status);
+
+        if ($code != 200) {
+            $msg = '';
+            if (property_exists($json_response, 'message')) {
+                $msg = $json_response->message;
+                if (property_exists($msg, 'message')) {
+                    $msg = $msg->message;
+                }
             }
-            return $json_response->entries;
+            throw new ApiException($msg, $curl_errno);
+        } else {
+            return $json_response;
         }
 
     }
 
-    public function Send(int $sender, string $receptor, string $text, $date = null)
+    public function Send(string $sender, string $receptor, string $text, $date = null)
     {
         $path = $this->get_path("send");
         $params = array(
@@ -104,14 +114,14 @@ class SignalAdsApi
             "receptor" => $receptor,
             "date" => $date
         );
-        return $this->execute($path, $params);
+        return $this->execute($path, $params, 'GET');
     }
 
-    public function SendGroup(int $sender, array $receptor, string $text, $date = null)
+    public function SendGroup(string $sender, array $receptor, string $text, $date = null)
     {
         $path = $this->get_path("sendGroup");
         $params = array(
-            "receptor" => json_encode($receptor),
+            "receptors" => $receptor,
             "sender" => $sender,
             "text" => $text,
             "date" => $date
@@ -119,7 +129,7 @@ class SignalAdsApi
         return $this->execute($path, $params);
     }
 
-    public function SendPair(int $sender, array $messages)
+    public function SendPair(string $sender, array $messages)
     {
         foreach ($messages as $message) {
             if (!key_exists('text', $message)) {
@@ -138,14 +148,14 @@ class SignalAdsApi
         return $this->execute($path, $params);
     }
 
-    public function SendPattern(int $sender, int $patternId, array $patternParams, array $receptor)
+    public function SendPattern(string $sender, int $patternId, array $patternParams, array $receptor)
     {
-        $path = $this->get_path("sendPattern");
+        $path = $this->get_path("withPattern");
         $params = array(
             "sender" => $sender,
             "pattern_id" => $patternId,
-            "pattern_params" => json_encode($patternParams),
-            "receptor" => json_encode($receptor)
+            "pattern_params" => $patternParams,
+            "receptor" => $receptor
         );
         return $this->execute($path, $params);
     }
@@ -158,28 +168,28 @@ class SignalAdsApi
         string $receptor = null
     )
     {
-        $url = "$messageid?";
+        $url = "/$messageid?";
         $url .= !is_null($limit) ? "limit=$limit" : '';
         $url .= !is_null($offset) ? "&offset=$offset" : '';
         $url .= !is_null($status) ? "&status=$status" : '';
         $url .= !is_null($receptor) ? "&receptor=$receptor" : '';
 
         $path = $this->get_path("status" . $url);
-        $params = null;
+        $params = [];
         return $this->execute($path, $params, 'GET');
     }
 
     public function GetCredit()
     {
         $path = $this->get_path("credit");
-        $params = null;
+        $params = [];
         return $this->execute($path, $params, 'GET');
     }
 
     public function GetPackagePrice()
     {
         $path = $this->get_path("packagePrice");
-        $params = null;
+        $params = [];
         return $this->execute($path, $params, 'GET');
     }
 
